@@ -161,7 +161,7 @@ imap.once('ready', function() {
 
     checkNewMessages();
 
-    setInterval(checkNewMessages, 30000);
+    setInterval(checkNewMessages, 5*60*1000);
   });
 });
 
