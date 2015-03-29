@@ -3,6 +3,7 @@ var parseEmails = require('./conditions').parseEmails;
 var isTheOnlyOne = require('./conditions').isTheOnlyOne;
 var hasGmailLabel = require('./conditions').hasGmailLabel;
 var isInTo = require('./conditions').isInTo;
+var isMomSpam = require('./conditions').isMomSpam;
 
 describe('conditions', function() {
   describe('parseEmails', function() {
@@ -142,6 +143,64 @@ describe('conditions', function() {
             "whateva"
           ]
         }
+      })).toBe(false);
+    });
+  });
+
+  describe('isMomSpam', function() {
+    var isMomSpam_ = isMomSpam();
+
+    it('should match FW:', function() {
+      expect(isMomSpam_({
+        "headers": {
+          "subject": ["FW: Something"],
+          "date": ["2015-10-22"]
+        },
+        "thread": []
+      })).toBe(true);
+      expect(isMomSpam_({
+        "headers": {
+          "subject": ["Fw: Something"],
+          "date": ["2015-10-22"]
+        },
+        "thread": []
+      })).toBe(true);
+    });
+
+    it('should match FWD:', function() {
+      expect(isMomSpam_({
+        "headers": {
+          "subject": ["FWD: Something"],
+          "date": ["2015-10-22"]
+        },
+        "thread": []
+      })).toBe(true);
+      expect(isMomSpam_({
+        "headers": {
+          "subject": ["Fwd: Something"],
+          "date": ["2015-10-22"]
+        },
+        "thread": []
+      })).toBe(true);
+    });
+
+    it('should only match if first message in a thread', function() {
+      expect(isMomSpam_({
+        "headers": {
+          "subject": ["FW: Something"],
+          "date": ["2015-10-22"]
+        },
+        // Here is one message before,
+        // so it's not the start of the thread.
+        "thread": [{
+          "headers": {
+            "date": ["2015-10-21"]
+          }
+        }, {
+          "headers": {
+            "date": ["2015-10-22"]
+          }
+        }]
       })).toBe(false);
     });
   });

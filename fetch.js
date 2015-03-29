@@ -36,13 +36,20 @@ function processMessage(msg) {
   var meInTo = conditions.isInTo(ME);
   var hasAnyLabel = conditions.hasGmailLabel();
   var hasGmailImportantLabel = conditions.hasGmailLabel('\\Important');
+  var isMomSpam = conditions.isMomSpam();
 
   var moveToInbox = actions.move(imap, 'INBOX');
   var moveToLowPriority = actions.move(imap, '@LowPriority');
   var moveToArchive = actions.move(imap, '[Gmail]/All Mail');
   var markTriaged = actions.removeLabel(imap, '@ToBeTriaged');
+  var labelMom = actions.addLabel(imap, '@MomSpamAuto');
 
   markTriaged(msg);
+
+  if (isMomSpam(msg)) {
+    labelMom(msg);
+    return moveToLowPriority(msg);
+  }
 
   if (meInTo(msg) && hasGmailImportantLabel(msg)) {
     return moveToInbox(msg);

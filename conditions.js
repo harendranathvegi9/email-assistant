@@ -45,6 +45,21 @@ function createHasGmailLabel(label) {
   };
 }
 
+function isFirstInTheThread(msg) {
+  var msgTime = Date.parse(msg.headers['date'][0]);
+
+  return !msg['thread'].some(function(msgInThread) {
+    return Date.parse(msgInThread.headers['date'][0]) < msgTime;
+  });
+}
+
+var MOMSPAM_SUBJECT = /^(FWD|Fwd|FW|Fw):/;
+function createIsMomSpam() {
+  return function isMomSpam(msg) {
+    return MOMSPAM_SUBJECT.test(msg.headers['subject']) && isFirstInTheThread(msg);
+  };
+}
+
 
 // is from one of ...
 // is important (gmail)
@@ -55,3 +70,4 @@ exports.isInTo = createIsInTo;
 exports.isTheOnlyOne = createIsTheOnlyOneInTo;
 exports.isOnlyCC = createIsOnlyCC;
 exports.hasGmailLabel = createHasGmailLabel;
+exports.isMomSpam = createIsMomSpam;
