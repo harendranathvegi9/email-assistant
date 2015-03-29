@@ -1,0 +1,27 @@
+{
+  "name": "email-assistant",
+  "version": "0.0.0",
+  "description": "Triage your inbox.",
+  "main": "main.js",
+  "dependencies": {
+    "imap": "^0.8.14",
+    "jasmine-node": "^1.14.5",
+    "q": "^1.2.0"
+  },
+  "devDependencies": {
+    "jasmine-node": "^1.14.5"
+  },
+  "scripts": {
+    "test": "test.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vojtajina/email-assistant.git"
+  },
+  "author": "Vojta Jina <vojta.jina@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/vojtajina/email-assistant/issues"
+  },
+  "homepage": "https://github.com/vojtajina/email-assistant"
+}
