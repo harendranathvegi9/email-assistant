@@ -1,20 +1,16 @@
 var conditions = require('./conditions');
-var isOnlyCC = require('./conditions').isOnlyCC;
-var parseEmails = require('./conditions').parseEmails;
-var isTheOnlyOne = require('./conditions').isTheOnlyOne;
-var hasGmailLabel = require('./conditions').hasGmailLabel;
-var isInTo = require('./conditions').isInTo;
-var isMomSpam = require('./conditions').isMomSpam;
 
 describe('conditions', function() {
   describe('parseEmails', function() {
+    var parseEmails = conditions.parseEmails;
+
     it('should parse', function() {
       expect(parseEmails('Vojta Jina <vojta.jina@gmail.com>, Mike <soul@yahoo.com>')).toEqual(['vojta.jina@gmail.com', 'soul@yahoo.com']);
     });
   });
 
   describe('isInTo', function() {
-    var vojtaIsInTo = isInTo('vojta.jina@gmail.com');
+    var vojtaIsInTo = conditions.isInTo('vojta.jina@gmail.com');
 
     it('should be true', function() {
       expect(vojtaIsInTo({
@@ -34,7 +30,7 @@ describe('conditions', function() {
   });
 
   describe('isTheOnlyOneInTo', function() {
-    var vojtaIsTheOnlyOneInTo = isTheOnlyOne('vojta.jina@gmail.com');
+    var vojtaIsTheOnlyOneInTo = conditions.isTheOnlyOne('vojta.jina@gmail.com');
 
     it('should be false if others in TO', function() {
       expect(vojtaIsTheOnlyOneInTo({
@@ -62,7 +58,7 @@ describe('conditions', function() {
   });
 
   describe('isOnlyCC', function() {
-    var vojtaOnlyCC = isOnlyCC('vojta.jina@gmail.com');
+    var vojtaOnlyCC = conditions.isOnlyCC('vojta.jina@gmail.com');
 
     it('should be true if not in TO and only in CC', function() {
       expect(vojtaOnlyCC({
@@ -129,9 +125,8 @@ describe('conditions', function() {
 
   describe('hasGmailLabel', function() {
 
-
     it('should be true when a specific label is present', function() {
-      var hasFooGmailLabel = hasGmailLabel('foo');
+      var hasFooGmailLabel = conditions.hasGmailLabel('foo');
 
       expect(hasFooGmailLabel({
         "attrs": {
@@ -144,7 +139,7 @@ describe('conditions', function() {
     });
 
     it('should be false when a specific label is not present', function() {
-      var hasFooGmailLabel = hasGmailLabel('foo');
+      var hasFooGmailLabel = conditions.hasGmailLabel('foo');
 
       expect(hasFooGmailLabel({
         "attrs": {
@@ -157,17 +152,17 @@ describe('conditions', function() {
   });
 
   describe('isMomSpam', function() {
-    var isMomSpam_ = isMomSpam();
+    var isMomSpam = conditions.isMomSpam();
 
     it('should match FW:', function() {
-      expect(isMomSpam_({
+      expect(isMomSpam({
         "headers": {
           "subject": ["FW: Something"],
           "date": ["2015-10-22"]
         },
         "thread": []
       })).toBe(true);
-      expect(isMomSpam_({
+      expect(isMomSpam({
         "headers": {
           "subject": ["Fw: Something"],
           "date": ["2015-10-22"]
@@ -177,14 +172,14 @@ describe('conditions', function() {
     });
 
     it('should match FWD:', function() {
-      expect(isMomSpam_({
+      expect(isMomSpam({
         "headers": {
           "subject": ["FWD: Something"],
           "date": ["2015-10-22"]
         },
         "thread": []
       })).toBe(true);
-      expect(isMomSpam_({
+      expect(isMomSpam({
         "headers": {
           "subject": ["Fwd: Something"],
           "date": ["2015-10-22"]
@@ -194,7 +189,7 @@ describe('conditions', function() {
     });
 
     it('should only match if first message in a thread', function() {
-      expect(isMomSpam_({
+      expect(isMomSpam({
         "headers": {
           "subject": ["FW: Something"],
           "date": ["2015-10-22"]
