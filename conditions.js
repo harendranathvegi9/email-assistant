@@ -31,19 +31,24 @@ function createIsOnlyCC(email) {
   };
 }
 
-// TODO: special API hasAnyCustomLabel
-var IGNORED_GMAIL_LABELS = ['\\Important', '\\Inbox', '\\Sent', '@ToBeTriaged'];
 function createHasGmailLabel(label) {
-  return label ? function hasGmailLabel(msg) {
+  return function hasGmailLabel(msg) {
     var labels = msg.attrs['x-gm-labels'];
     return labels.indexOf(label) !== -1;
-  } : function hasAnyGmailLabel(msg) {
-    var labels = msg.attrs['x-gm-labels'].filter(function(label) {
-      return IGNORED_GMAIL_LABELS.indexOf(label) === -1;
-    });
-    return labels.length > 0;
   };
 }
+
+var IGNORED_GMAIL_LABELS = ['\\Important', '\\Inbox', '\\Sent', '@ToBeTriaged'];
+function createHasAnyCustomGmailLabels(ignoredLabels) {
+  return function hasAnyCustomGmailLabels(msg) {
+    var customLabels = msg.attrs['x-gm-labels'].filter(function(label) {
+      return IGNORED_GMAIL_LABELS.indexOf(label) === -1 && ignoredLabels.indexOf(label) === -1;
+    });
+
+    return customLabels.length > 0;
+  };
+}
+
 
 function filterEarlierMessagesInThread(msg) {
   if (!msg.thread) {
@@ -85,5 +90,6 @@ exports.isInTo = createIsInTo;
 exports.isTheOnlyOne = createIsTheOnlyOneInTo;
 exports.isOnlyCC = createIsOnlyCC;
 exports.hasGmailLabel = createHasGmailLabel;
+exports.hasAnyCustomGmailLabels = createHasAnyCustomGmailLabels;
 exports.isMomSpam = createIsMomSpam;
 exports.earlierMessageInThreadFrom = createEarlierMessageInThreadFrom;

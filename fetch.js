@@ -34,7 +34,7 @@ function processMessage(msg) {
   //console.log('msg', JSON.stringify(msg, null, '  '));
 
   var meInTo = conditions.isInTo(ME);
-  var hasAnyLabel = conditions.hasGmailLabel();
+  var hasAnyLabel = conditions.hasAnyCustomGmailLabels(['@ToBeTriaged']);
   var hasGmailImportantLabel = conditions.hasGmailLabel('\\Important');
   var isMomSpam = conditions.isMomSpam();
   var earlierMessageFromMeInThread = conditions.earlierMessageInThreadFrom(ME);

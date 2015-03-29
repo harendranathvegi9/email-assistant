@@ -83,12 +83,10 @@ describe('conditions', function() {
     });
   });
 
-
-  describe('hasGmailLabel', function() {
+  describe('hasAnyCustomGmailLabels', function() {
+    var hasAnyGmailLabel = conditions.hasAnyCustomGmailLabels('Ignored');
 
     it('should be true when there is any label', function() {
-      var hasAnyGmailLabel = hasGmailLabel();
-
       expect(hasAnyGmailLabel({
         "attrs": {
           "x-gm-labels": [
@@ -99,8 +97,6 @@ describe('conditions', function() {
     });
 
     it('should be false when there is no label', function() {
-      var hasAnyGmailLabel = hasGmailLabel();
-
       expect(hasAnyGmailLabel({
         "attrs": {
           "x-gm-labels": []
@@ -109,8 +105,6 @@ describe('conditions', function() {
     });
 
     it('should ignore Gmail default labels', function() {
-      var hasAnyGmailLabel = hasGmailLabel();
-
       expect(hasAnyGmailLabel({
         "attrs": {
           "x-gm-labels": [
@@ -121,6 +115,20 @@ describe('conditions', function() {
         }
       })).toBe(false);
     });
+
+    it('should ignore ignored labels', function() {
+      expect(hasAnyGmailLabel({
+        "attrs": {
+          "x-gm-labels": [
+            "Ignored"
+          ]
+        }
+      })).toBe(false);
+    });
+  });
+
+  describe('hasGmailLabel', function() {
+
 
     it('should be true when a specific label is present', function() {
       var hasFooGmailLabel = hasGmailLabel('foo');
