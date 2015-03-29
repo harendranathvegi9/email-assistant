@@ -4,10 +4,10 @@ var conditions = require('./conditions');
 var actions = require('./actions');
 
 var credentials = require('./credentials');
-var ME = credentials.username;
+var ME = credentials.username || process.env.X_USERNAME;
 var imap = new Imap({
   user: ME,
-  password: credentials.password,
+  password: credentials.password || process.env.X_PASSWORD,
   host: 'imap.gmail.com',
   port: 993,
   tls: true
