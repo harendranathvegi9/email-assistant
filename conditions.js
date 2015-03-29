@@ -45,12 +45,20 @@ function createHasGmailLabel(label) {
   };
 }
 
-function isFirstInTheThread(msg) {
+function filterEarlierMessagesInThread(msg) {
+  if (!msg.thread) {
+    return [];
+  }
+
   var msgTime = Date.parse(msg.headers['date'][0]);
 
-  return !msg['thread'].some(function(msgInThread) {
+  return msg.thread.filter(function(msgInThread) {
     return Date.parse(msgInThread.headers['date'][0]) < msgTime;
   });
+}
+
+function isFirstInTheThread(msg) {
+  return filterEarlierMessagesInThread(msg).length === 0;
 }
 
 var MOMSPAM_SUBJECT = /^(FWD|Fwd|FW|Fw):/;
@@ -60,6 +68,13 @@ function createIsMomSpam() {
   };
 }
 
+function createEarlierMessageInThreadFrom(email) {
+  return function earlierMessageInThreadFrom(msg) {
+    return filterEarlierMessagesInThread(msg).some(function(msgInThread) {
+      return parseEmails(msgInThread.headers['from'][0]).indexOf(email) !== -1;
+    });
+  };
+}
 
 // is from one of ...
 // is important (gmail)
@@ -71,3 +86,4 @@ exports.isTheOnlyOne = createIsTheOnlyOneInTo;
 exports.isOnlyCC = createIsOnlyCC;
 exports.hasGmailLabel = createHasGmailLabel;
 exports.isMomSpam = createIsMomSpam;
+exports.earlierMessageInThreadFrom = createEarlierMessageInThreadFrom;

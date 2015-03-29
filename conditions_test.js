@@ -1,3 +1,4 @@
+var conditions = require('./conditions');
 var isOnlyCC = require('./conditions').isOnlyCC;
 var parseEmails = require('./conditions').parseEmails;
 var isTheOnlyOne = require('./conditions').isTheOnlyOne;
@@ -202,6 +203,59 @@ describe('conditions', function() {
           }
         }]
       })).toBe(false);
+    });
+  });
+
+  describe('earlierMessageInThreadFrom', function() {
+    var earlierMessageFromVojta = conditions.earlierMessageInThreadFrom('vojta.jina@gmail.com');
+
+    it('first message', function() {
+      expect(earlierMessageFromVojta({
+        "headers": {
+          "date": ["2015-10-22"]
+        },
+        // Both messages are later in the thread.
+        "thread": [{
+          // The message itself.
+          "headers": {
+            "date": ["2015-10-22"]
+          },
+        }, {
+          "headers": {
+            "from": ["Vojta <vojta.jina@gmail.com"],
+            "date": ["2015-10-24"]
+          }
+        }, {
+          "headers": {
+            "from": ["Vojta <vojta.jina@gmail.com"],
+            "date": ["2015-10-25"]
+          }
+        }]
+      })).toBe(false);
+    });
+
+    it('previous message from vojta', function() {
+      expect(earlierMessageFromVojta({
+        "headers": {
+          "date": ["2015-10-22"]
+        },
+        "thread": [{
+          "headers": {
+            "from": ["Somebody <sss@goo.bar>"],
+            "date": ["2015-10-20"]
+          },
+        }, {
+          "headers": {
+            "from": ["Vojta <vojta.jina@gmail.com>"],
+            "date": ["2015-10-21"]
+          }
+        }, {
+          // The message itself.
+          "headers": {
+            "date": ["2015-10-22"]
+          }
+        }]
+      })).toBe(true);
     });
   });
 });

@@ -37,6 +37,7 @@ function processMessage(msg) {
   var hasAnyLabel = conditions.hasGmailLabel();
   var hasGmailImportantLabel = conditions.hasGmailLabel('\\Important');
   var isMomSpam = conditions.isMomSpam();
+  var earlierMessageFromMeInThread = conditions.earlierMessageInThreadFrom(ME);
 
   var moveToInbox = actions.move(imap, 'INBOX');
   var moveToLowPriority = actions.move(imap, '@LowPriority');
@@ -55,7 +56,9 @@ function processMessage(msg) {
     return moveToInbox(msg);
   }
 
-  // TODO: if a message from me, in this thread, before this msg -> INBOX
+  if (earlierMessageFromMeInThread(msg)) {
+    return moveToInbox(msg);
+  }
 
   if (hasAnyLabel(msg)) {
     return;
