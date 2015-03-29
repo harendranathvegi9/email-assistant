@@ -19,6 +19,8 @@ var imap = new Imap({
 //   can't be done with imap.delLabels, the message needs to be actually moved.
 //
 // - you can't label a message after moving to a different box
+//
+// - a message never gets removed from All Mail box
 
 function processMessage(msg) {
   var uid = msg.attrs.uid;
@@ -38,6 +40,9 @@ function processMessage(msg) {
   var moveToInbox = actions.move(imap, 'INBOX');
   var moveToLowPriority = actions.move(imap, '@LowPriority');
   var moveToArchive = actions.move(imap, '[Gmail]/All Mail');
+  var markTriaged = actions.removeLabel(imap, '@ToBeTriaged');
+
+  markTriaged(msg);
 
   if (meInTo(msg) && hasGmailImportantLabel(msg)) {
     return moveToInbox(msg);
@@ -46,6 +51,7 @@ function processMessage(msg) {
   // TODO: if a message from me, in this thread, before this msg -> INBOX
 
   if (hasAnyLabel(msg)) {
+    return;
     return moveToArchive(msg);
   }
 
@@ -54,7 +60,7 @@ function processMessage(msg) {
 
 
 function checkNewMessages() {
-  imap.search([['SINCE', 'March 20, 2015']], function(err, results) {
+  imap.search([['X-GM-LABELS', '@ToBeTriaged']], function(err, results) {
     if (err) {
       console.error('Error while searching box', err);
       throw err;
@@ -117,7 +123,7 @@ imap.once('ready', function() {
   'Trash' ]
   */
 
-  imap.openBox('@ToBeTriaged', false, function(err, box) {
+  imap.openBox('[Gmail]/All Mail', false, function(err, box) {
     if (err) throw err;
 
     checkNewMessages();

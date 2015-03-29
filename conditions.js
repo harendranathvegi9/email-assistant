@@ -31,7 +31,8 @@ function createIsOnlyCC(email) {
   };
 }
 
-var IGNORED_GMAIL_LABELS = ['\\Important', '\\Inbox', '\\Sent'];
+// TODO: special API hasAnyCustomLabel
+var IGNORED_GMAIL_LABELS = ['\\Important', '\\Inbox', '\\Sent', '@ToBeTriaged'];
 function createHasGmailLabel(label) {
   return label ? function hasGmailLabel(msg) {
     var labels = msg.attrs['x-gm-labels'];
