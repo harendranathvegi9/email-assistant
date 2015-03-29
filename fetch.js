@@ -58,23 +58,19 @@ function processMessage(msg) {
   return moveToLowPriority(msg);
 }
 
-
-function checkNewMessages() {
-  imap.search([['X-GM-LABELS', '@ToBeTriaged']], function(err, results) {
+function fetchMessages(criterions, cb) {
+  imap.search(criterions, function(err, results) {
     if (err) {
-      console.error('Error while searching box', err);
-      throw err;
+      return cb(err, []);
     }
 
     if (results.length === 0) {
-      console.log('No new messages.');
-      return;
+      return cb(null, []);
     }
 
-    console.log('Fetching ' + results.length + ' new messages');
+    console.log('Fetching ' + results.length + ' messages');
 
-    // to, sender, reply-to, list-unsubscribe, list-id, cc, bcc
-    // TO, SENDER, REPLY-TO
+    var messages = [];
     var f = imap.fetch(results, {
       bodies: 'HEADER.FIELDS (FROM TO CC BCC SUBJECT DATE)',
       struct: true
@@ -97,17 +93,44 @@ function checkNewMessages() {
         attrs = _attrs;
       });
       msg.once('end', function() {
-        processMessage({headers: headers, attrs: attrs});
+        messages.push({headers: headers, attrs: attrs});
       });
     });
 
     f.once('error', function(err) {
       console.error('Fetch error: ' + err);
+      return cb(err, []);
     });
 
     f.once('end', function() {
-      //console.log('Done fetching all messages!');
-      //imap.end();
+      return cb(null, messages);
+    });
+  });
+}
+
+
+function checkNewMessages() {
+  fetchMessages([['X-GM-LABELS', '@ToBeTriaged']], function(err, results) {
+    if (err) {
+      console.error('Error while searching/fetching new messages', err);
+      return;
+    }
+
+    if (results.length === 0) {
+      console.log('No new messages.');
+      return;
+    }
+
+    console.log(results.length, 'New messages.');
+    results.forEach(function(message) {
+      var gmailThreadId = message.attrs['x-gm-thrid'];
+      fetchMessages([['X-GM-THRID', gmailThreadId]], function(err, messagesInThread) {
+        if (err) {
+          console.error('Failed to fetch messages in thread', gmailThreadId, err);
+        }
+
+        return processMessage({headers: message.headers, attrs: message.attrs, thread: messagesInThread});
+      });
     });
   });
 }
