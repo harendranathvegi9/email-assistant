@@ -5,9 +5,10 @@ function createAddLabelAction(imap, label) {
 
     imap.addLabels(uid, label, function(err) {
       if (err) {
-        console.error(gmailId || uid, 'Failed to add label ' + label, err);
+        console.error(gmailId, uid, msg.headers.subject[0]);
+        console.error('  Failed to add label ' + label, err);
       } else {
-        console.log(gmailId || uid, 'Label ' + label + ' added');
+        console.log('  Label ' + label + ' added');
       }
     });
   };
@@ -20,9 +21,10 @@ function createRemoveLabelAction(imap, label) {
 
     imap.delLabels(uid, label, function(err) {
       if (err) {
-        console.error(gmailId || uid, 'Failed to remove label ' + label, err);
+        console.error(gmailId, uid, msg.headers.subject[0]);
+        console.error('  Failed to remove label ' + label, err);
       } else {
-        console.log(gmailId || uid, 'Label ' + label + ' removed');
+        console.log('  Label ' + label + ' removed');
       }
     });
   };
@@ -35,9 +37,10 @@ function createMoveAction(imap, box) {
 
     imap.move(uid, box, function(err) {
       if (err) {
-        console.error(gmailId || uid, 'Failed to move to ' + box, err);
+        console.error(gmailId, uid, msg.headers.subject[0]);
+        console.error('  Failed to move to ' + box, err);
       } else {
-        console.log(gmailId || uid, 'Moved to ' + box);
+        console.log('  Moved to ' + box);
       }
     });
   };

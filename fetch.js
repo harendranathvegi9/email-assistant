@@ -21,6 +21,11 @@ var imap = new Imap({
 // - you can't label a message after moving to a different box
 
 function processMessage(msg) {
+  var uid = msg.attrs.uid;
+  var gmailId = msg.attrs['x-gm-msgid'];
+
+  console.log(gmailId, uid, msg.headers.subject[0]);
+
   // TODO: make this declarative
 
   //console.log('');
