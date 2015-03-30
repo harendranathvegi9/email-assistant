@@ -47,22 +47,16 @@ function processMessage(msg) {
 
   markTriaged(msg);
 
-  if (isMomSpam(msg)) {
-    labelMom(msg);
-    return moveToLowPriority(msg);
-  }
-
-  if (meInTo(msg) && hasGmailImportantLabel(msg)) {
+  if (earlierMessageFromMeInThread(msg)) {
     return moveToInbox(msg);
   }
 
-  if (earlierMessageFromMeInThread(msg)) {
+  if (meInTo(msg) && hasGmailImportantLabel(msg) && !isMomSpam(msg)) {
     return moveToInbox(msg);
   }
 
   if (hasAnyLabel(msg)) {
     return;
-    return moveToArchive(msg);
   }
 
   return moveToLowPriority(msg);
