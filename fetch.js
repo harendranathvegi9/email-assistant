@@ -39,6 +39,7 @@ function processMessage(msg) {
   var hasGmailImportantLabel = conditions.hasGmailLabel('\\Important');
   var isMomSpam = conditions.isMomSpam();
   var earlierMessageFromMeInThread = conditions.earlierMessageInThreadFrom(ME);
+  var isSent = conditions.hasGmailLabel('\\Sent');
 
   var moveToInbox = actions.move(imap, 'INBOX');
   var moveToLowPriority = actions.move(imap, '@LowPriority');
@@ -48,11 +49,16 @@ function processMessage(msg) {
 
   markTriaged(msg);
 
+  if (isSent(msg)) {
+    return;
+  }
+
+
   if (earlierMessageFromMeInThread(msg)) {
     return moveToInbox(msg);
   }
 
-  if (meInTo(msg) && hasGmailImportantLabel(msg) && !isMomSpam(msg)) {
+  if (meInTo(msg) && hasGmailImportantLabel(msg) && !hasAnyLabel(msg) && !isMomSpam(msg)) {
     return moveToInbox(msg);
   }
 
