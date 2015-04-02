@@ -10,7 +10,8 @@ var imap = new Imap({
   password: credentials.password || process.env.X_PASSWORD,
   host: 'imap.gmail.com',
   port: 993,
-  tls: true
+  tls: true,
+  keepalive: true
 });
 
 
