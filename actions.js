@@ -3,13 +3,12 @@ function createAddLabelAction(imap, label) {
     var uid = msg.attrs.uid;
     var gmailId = msg.attrs['x-gm-msgid'];
 
-    imap.addLabels(uid, label, function(err) {
-      if (err) {
-        console.error(gmailId, uid, msg.headers.subject[0]);
-        console.error('  Failed to add label ' + label, err);
-      } else {
-        console.log('  Label ' + label + ' added');
-      }
+    return imap.addLabels(uid, label).then(function() {
+      console.log('  Label ' + label + ' added');
+    }, function(err) {
+      console.error(gmailId, uid, msg.headers.subject[0]);
+      console.error('  Failed to add label ' + label, err);
+      throw err;
     });
   };
 }
@@ -19,13 +18,12 @@ function createRemoveLabelAction(imap, label) {
     var uid = msg.attrs.uid;
     var gmailId = msg.attrs['x-gm-msgid'];
 
-    imap.delLabels(uid, label, function(err) {
-      if (err) {
-        console.error(gmailId, uid, msg.headers.subject[0]);
-        console.error('  Failed to remove label ' + label, err);
-      } else {
-        console.log('  Label ' + label + ' removed');
-      }
+    return imap.delLabels(uid, label).then(function() {
+      console.log('  Label ' + label + ' removed');
+    }, function(err) {
+      console.error(gmailId, uid, msg.headers.subject[0]);
+      console.error('  Failed to remove label ' + label, err);
+      throw err;
     });
   };
 }
@@ -35,13 +33,11 @@ function createMoveAction(imap, box) {
     var uid = msg.attrs.uid;
     var gmailId = msg.attrs['x-gm-msgid'];
 
-    imap.move(uid, box, function(err) {
-      if (err) {
-        console.error(gmailId, uid, msg.headers.subject[0]);
-        console.error('  Failed to move to ' + box, err);
-      } else {
-        console.log('  Moved to ' + box);
-      }
+    return imap.move(uid, box).then(function() {
+      console.log('  Moved to ' + box);
+    }, function(err) {
+      console.error(gmailId, uid, msg.headers.subject[0]);
+      console.error('  Failed to move to ' + box, err);
     });
   };
 }

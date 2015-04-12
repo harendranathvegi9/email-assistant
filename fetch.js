@@ -1,18 +1,28 @@
-var Imap = require('imap');
+var q = require('q');
 
+var ImapQ = require('./imap_q');
 var conditions = require('./conditions');
 var actions = require('./actions');
 
 var credentials = require('./credentials');
 var ME = credentials.username || process.env.X_USERNAME;
-var imap = new Imap({
+var imap = new ImapQ({
   user: ME,
   password: credentials.password || process.env.X_PASSWORD,
   host: 'imap.gmail.com',
   port: 993,
-  tls: true,
-  keepalive: true
+  tls: true
 });
+
+// Make debugging a bit easier.
+q.longStackSupport = true;
+
+function errorHandlerFor(label) {
+  return function errorHandler(err) {
+    console.error('error while', label, err);
+    throw err;
+  }
+}
 
 
 // Gmail notes:
@@ -22,6 +32,18 @@ var imap = new Imap({
 // - you can't label a message after moving to a different box
 //
 // - a message never gets removed from All Mail box
+var meInTo = conditions.isInTo(ME);
+var hasAnyLabel = conditions.hasAnyCustomGmailLabels(['@ToBeTriaged']);
+var hasGmailImportantLabel = conditions.hasGmailLabel('\\Important');
+var isMomSpam = conditions.isMomSpam();
+var earlierMessageFromMeInThread = conditions.earlierMessageInThreadFrom(ME);
+var isSent = conditions.hasGmailLabel('\\Sent');
+
+var moveToInbox = actions.move(imap, 'INBOX');
+var moveToLowPriority = actions.move(imap, '@LowPriority');
+var moveToArchive = actions.move(imap, '[Gmail]/All Mail');
+var markTriaged = actions.removeLabel(imap, '@ToBeTriaged');
+var labelMom = actions.addLabel(imap, '@MomSpamAuto');
 
 function processMessage(msg) {
   var uid = msg.attrs.uid;
@@ -34,150 +56,81 @@ function processMessage(msg) {
   //console.log('');
   //console.log('msg', JSON.stringify(msg, null, '  '));
 
-  var meInTo = conditions.isInTo(ME);
-  var hasAnyLabel = conditions.hasAnyCustomGmailLabels(['@ToBeTriaged']);
-  var hasGmailImportantLabel = conditions.hasGmailLabel('\\Important');
-  var isMomSpam = conditions.isMomSpam();
-  var earlierMessageFromMeInThread = conditions.earlierMessageInThreadFrom(ME);
-  var isSent = conditions.hasGmailLabel('\\Sent');
-
-  var moveToInbox = actions.move(imap, 'INBOX');
-  var moveToLowPriority = actions.move(imap, '@LowPriority');
-  var moveToArchive = actions.move(imap, '[Gmail]/All Mail');
-  var markTriaged = actions.removeLabel(imap, '@ToBeTriaged');
-  var labelMom = actions.addLabel(imap, '@MomSpamAuto');
-
-  markTriaged(msg);
-
   if (isSent(msg)) {
-    return;
+    return markTriaged(msg);
   }
 
-
   if (earlierMessageFromMeInThread(msg)) {
-    return moveToInbox(msg);
+    return q.all([markTriaged(msg), moveToInbox(msg)]);
   }
 
   if (meInTo(msg) && hasGmailImportantLabel(msg) && !hasAnyLabel(msg) && !isMomSpam(msg)) {
-    return moveToInbox(msg);
+    return q.all([markTriaged(msg), moveToInbox(msg)]);
   }
 
   if (hasAnyLabel(msg)) {
-    return;
+    return markTriaged(msg);
   }
 
-  return moveToLowPriority(msg);
+  return q.all([moveToLowPriority(msg), markTriaged(msg)]);
 }
 
-function fetchMessages(criterions, cb) {
-  imap.search(criterions, function(err, results) {
-    if (err) {
-      return cb(err, []);
-    }
-
+function fetchMessages(criterions) {
+  return imap.search(criterions).then(function(results) {
     if (results.length === 0) {
-      return cb(null, []);
+      return [];
     }
 
     console.log('Fetching ' + results.length + ' messages');
-
-    var messages = [];
-    var f = imap.fetch(results, {
-      bodies: 'HEADER.FIELDS (FROM TO CC BCC SUBJECT DATE)',
-      struct: true
-    });
-
-    f.on('message', function(msg, seqno) {
-      var headers = null;
-      var attrs = null;
-
-      msg.on('body', function(stream, info) {
-        var buffer = '';
-        stream.on('data', function(chunk) {
-          buffer += chunk.toString('utf8');
-        });
-        stream.once('end', function() {
-          headers = Imap.parseHeader(buffer);
-        });
-      });
-      msg.once('attributes', function(_attrs) {
-        attrs = _attrs;
-      });
-      msg.once('end', function() {
-        messages.push({headers: headers, attrs: attrs});
-      });
-    });
-
-    f.once('error', function(err) {
-      console.error('Fetch error: ' + err);
-      return cb(err, []);
-    });
-
-    f.once('end', function() {
-      return cb(null, messages);
-    });
-  });
+    return imap.fetch(results, errorHandlerFor('fetching messages'));
+  }, errorHandlerFor('searching'));
 }
 
 
 function checkNewMessages() {
-  fetchMessages([['X-GM-LABELS', '@ToBeTriaged']], function(err, results) {
-    if (err) {
-      console.error('Error while searching/fetching new messages', err);
-      return;
-    }
-
+  return fetchMessages([['X-GM-LABELS', '@ToBeTriaged']]).then(function(results) {
     if (results.length === 0) {
       console.log('No new messages.');
-      return;
+      return results;
     }
 
     console.log(results.length, 'New messages.');
-    results.forEach(function(message) {
+    return q.all(results.map(function(message) {
       var gmailThreadId = message.attrs['x-gm-thrid'];
-      fetchMessages([['X-GM-THRID', gmailThreadId]], function(err, messagesInThread) {
-        if (err) {
-          console.error('Failed to fetch messages in thread', gmailThreadId, err);
-        }
-
-        return processMessage({headers: message.headers, attrs: message.attrs, thread: messagesInThread});
-      });
-    });
-  });
+      return fetchMessages([['X-GM-THRID', gmailThreadId]]).then(function(messagesInThread) {
+        return processMessage({headers: message.headers, attrs: message.attrs, thread: messagesInThread}).then(function(r) {
+          return r;
+        }, errorHandlerFor('processing message'));
+      }, errorHandlerFor('fetching messages in thread ' + gmailThreadId));
+    }));
+  }, errorHandlerFor('fetching new messages'));
 }
 
-imap.once('ready', function() {
-  /* Gmail boxes
-[ 'All Mail',
-  'Drafts',
-  'Important',
-  'Sent Mail',
-  'Spam',
-  'Starred',
-  'Trash' ]
-  */
 
-  imap.openBox('[Gmail]/All Mail', false, function(err, box) {
-    if (err) throw err;
+// Gmail boxes:
+//  - All Mail
+//  - Drafts
+//  - Important
+//  - Sent Mail
+//  - Spam
+//  - Starred
+//  - Trash
 
-    checkNewMessages();
+var READ_ONLY = false;
 
-    setInterval(checkNewMessages, 5*60*1000);
-  });
-});
+imap.connect().then(function() {
+  // console.log('Connected');
 
-imap.once('error', function(err) {
-  console.error(err);
-  process.exit(1);
-});
+  imap.openBox('[Gmail]/All Mail', READ_ONLY)
+    .then(checkNewMessages, errorHandlerFor('opening box'))
+    .done(function() {
+      // console.log('Done');
+      imap.end();
+    });
+}, errorHandlerFor('connecting'));
 
-imap.once('end', function() {
-  console.log('Connection ended');
-  process.exit();
-});
-
-imap.connect();
 
 process.on('SIGINT', function() {
-  imap.end();
+  // Close the connection without waiting to finish pending requests.
+  imap.destroy();
 });
