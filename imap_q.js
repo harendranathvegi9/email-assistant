@@ -62,16 +62,22 @@ function ImapQ(options) {
     return deferred.promise;
   };
 
+  // Call _imap.destroy() and resolve the promise once the connection is closed.
+  this.destroy = function() {
+    var deferred = q.defer();
+    _imap.once('close', function() {
+      deferred.resolve();
+    });
+    _imap.destroy();
+    return deferred.promise;
+  };
+
   // Promisify callbacks APIs.
   this.search = q.nbind(_imap.search, _imap);
   this.openBox = q.nbind(_imap.openBox, _imap);
   this.addLabels = q.nbind(_imap.addLabels, _imap);
   this.delLabels = q.nbind(_imap.delLabels, _imap);
   this.move = q.nbind(_imap.move, _imap);
-
-  // Just proxy regular sync calls.
-  this.end = _imap.end.bind(_imap);
-  this.destroy = _imap.destroy.bind(_imap);
 }
 
 module.exports = ImapQ;

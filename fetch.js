@@ -117,20 +117,39 @@ function checkNewMessages() {
 //  - Trash
 
 var READ_ONLY = false;
+var alreadyInterrupted = false;
+var currentPendingPromise = null;
 
-imap.connect().then(function() {
-  // console.log('Connected');
+function processAllNewMessages() {
+  currentPendingPromise = imap.connect().then(function() {
+    console.log('Connected');
 
-  imap.openBox('[Gmail]/All Mail', READ_ONLY)
-    .then(checkNewMessages, errorHandlerFor('opening box'))
-    .done(function() {
-      // console.log('Done');
-      imap.end();
-    });
-}, errorHandlerFor('connecting'));
-
+    return imap.openBox('[Gmail]/All Mail', READ_ONLY)
+      .then(checkNewMessages, errorHandlerFor('opening box'))
+      .then(function() {
+        currentPendingPromise = null;
+        console.log('Done');
+        // imap.end();
+      });
+  }, errorHandlerFor('connecting'));
+}
 
 process.on('SIGINT', function() {
-  // Close the connection without waiting to finish pending requests.
-  imap.destroy();
+  // Nothing is happening right now, just exit.
+  if (!currentPendingPromise) {
+    return process.exit();
+  }
+
+  // First interruption, wait for finishing current task.
+  if (!alreadyInterrupted) {
+    alreadyInterrupted = true;
+    return currentPendingPromise.then(process.exit, process.exit);
+  }
+
+  // Second interruption - force kill immediately.
+  console.log('Forced guit, destroying current connection.');
+  return imap.destroy().then(process.exit, process.exit);
 });
+
+processAllNewMessages();
+setInterval(processAllNewMessages, 30*1000);
