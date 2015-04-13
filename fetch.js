@@ -56,21 +56,26 @@ function processMessage(msg) {
   //console.log('msg', JSON.stringify(msg, null, '  '));
 
   if (isSent(msg)) {
+    console.log('  Ignored, because in Gmail/Sent.');
     return markTriaged(msg);
   }
 
   if (earlierMessageFromMeInThread(msg)) {
+    console.log('  Inbox, because of previous message from ME earlier in the thread.');
     return q.all([markTriaged(msg), moveToInbox(msg)]);
   }
 
   if (meInTo(msg) && hasGmailImportantLabel(msg) && !hasAnyLabel(msg) && !isMomSpam(msg)) {
+    console.log('  Directly to ME, Gmail important, no custom label, no mom spam.');
     return q.all([markTriaged(msg), moveToInbox(msg)]);
   }
 
   if (hasAnyLabel(msg)) {
+    console.log('  Ignored, because it has other custom label.');
     return markTriaged(msg);
   }
 
+  console.log('  Low priority (not directly to ME, no custom label).');
   return q.all([moveToLowPriority(msg), markTriaged(msg)]);
 }
 
@@ -89,11 +94,11 @@ function fetchMessages(criterions) {
 function checkNewMessages() {
   return fetchMessages([['X-GM-LABELS', '@ToBeTriaged']]).then(function(results) {
     if (results.length === 0) {
-      console.log('No new messages.');
+      console.log(new Date() + ' No new messages.');
       return results;
     }
 
-    console.log(results.length, 'New messages.');
+    console.log(new Date() + ' ' + results.length + ' new messages.');
     return q.all(results.map(function(message) {
       var gmailThreadId = message.attrs['x-gm-thrid'];
       return fetchMessages([['X-GM-THRID', gmailThreadId]]).then(function(messagesInThread) {
