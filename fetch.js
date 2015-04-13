@@ -152,4 +152,4 @@ process.on('SIGINT', function() {
 });
 
 processAllNewMessages();
-setInterval(processAllNewMessages, 30*1000);
+setInterval(processAllNewMessages, 5*60*1000);
