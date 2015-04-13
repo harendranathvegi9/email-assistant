@@ -72,6 +72,16 @@ function ImapQ(options) {
     return deferred.promise;
   };
 
+  // Call _imap.end() and resolve the promise once the connection is closed.
+  this.end = function() {
+    var deferred = q.defer();
+    _imap.once('close', function() {
+      deferred.resolve();
+    });
+    _imap.end();
+    return deferred.promise;
+  };
+
   // Promisify callbacks APIs.
   this.search = q.nbind(_imap.search, _imap);
   this.openBox = q.nbind(_imap.openBox, _imap);

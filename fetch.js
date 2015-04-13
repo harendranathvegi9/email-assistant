@@ -127,8 +127,9 @@ function processAllNewMessages() {
       .then(checkNewMessages, errorHandlerFor('opening box'))
       .then(function() {
         currentPendingPromise = null;
-        console.log('Done');
-        // imap.end();
+        return imap.end().then(function() {
+          console.log('Done');
+        });
       });
   }, errorHandlerFor('connecting'));
 }
